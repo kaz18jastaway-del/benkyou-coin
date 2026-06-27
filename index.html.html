@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="べんきょうコイン"/>
+<title>べんきょうコイン</title>
+<style>
+:root{
+  --bg:#F7F5F0;--card:#FFFFFF;--accent:#4F7FFF;--accent-light:#EBF0FF;--accent-dark:#2955CC;
+  --success:#2EBD7A;--success-light:#E6F9F1;--warning:#F5A623;--warning-light:#FEF5E7;
+  --danger:#E84444;--danger-light:#FDEDED;--text:#1A1A2E;--text2:#5A5A7A;--text3:#9A9AB0;
+  --border:#E8E8F0;--radius:14px;--radius-sm:10px;--shadow:0 2px 12px rgba(79,127,255,0.08);
+  --rare:#3FA9F5;--rare-bg:#E8F4FE;--sr:#9B59E8;--sr-bg:#F3EBFC;--legend:#F5A623;--legend-bg:#FEF5E7;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;color:var(--text);overscroll-behavior:none;}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto;background:var(--bg);}
+.content{flex:1;overflow-y:auto;padding:16px 16px 8px;}
+.screen{display:none;}.screen.active{display:block;}
+.nav{display:flex;background:var(--card);border-top:1px solid var(--border);padding:8px 0 env(safe-area-inset-bottom,8px);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border:none;background:none;cursor:pointer;color:var(--text3);font-size:10px;}
+.nav-btn.active{color:var(--accent);}
+.nav-btn .icon{font-size:22px;line-height:1;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.header-title{font-size:20px;font-weight:700;color:var(--text);}
+.header-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+.card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);}
+.card-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.metric{background:var(--card);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;box-shadow:var(--shadow);}
+.metric-label{font-size:10px;color:var(--text3);margin-bottom:4px;}
+.metric-val{font-size:22px;font-weight:700;}
+.metric-val.blue{color:var(--accent);}.metric-val.green{color:var(--success);}.metric-val.orange{color:var(--warning);}
+/* LEVEL/BUDDY CARD */
+.buddy-card{background:linear-gradient(135deg,#EBF0FF 0%,#F0EBFF 100%);border-radius:var(--radius);padding:20px;margin-bottom:14px;text-align:center;position:relative;overflow:hidden;}
+.buddy-card::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(79,127,255,0.08);border-radius:50%;}
+.lv-badge{display:inline-block;background:var(--accent);color:#fff;font-size:13px;font-weight:700;padding:3px 14px;border-radius:99px;margin-bottom:12px;position:relative;}
+.buddy-emoji{font-size:72px;line-height:1;margin-bottom:8px;display:inline-block;transition:transform .3s;}
+.buddy-emoji.pop{animation:pop .5s cubic-bezier(.36,.07,.19,.97);}
+@keyframes pop{0%,100%{transform:scale(1)}40%{transform:scale(1.35) rotate(-5deg)}70%{transform:scale(.9)}}
+.buddy-name{font-size:18px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.buddy-rare{font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;display:inline-block;margin-bottom:14px;}
+.r-normal{background:#EEE;color:#888;}.r-rare{background:var(--rare-bg);color:var(--rare);}
+.r-sr{background:var(--sr-bg);color:var(--sr);}.r-legend{background:var(--legend-bg);color:var(--legend);}
+.prog-track{background:rgba(255,255,255,0.6);border-radius:99px;height:10px;margin-bottom:6px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),#7B5FFF);border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.prog-txt{font-size:11px;color:var(--text2);}
+/* TIMER */
+.timer-phase{text-align:center;margin-bottom:6px;}
+.phase-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:99px;font-size:12px;font-weight:600;}
+.phase-pill.study{background:var(--accent-light);color:var(--accent);}
+.phase-pill.rest{background:var(--success-light);color:var(--success);}
+.phase-pill.warn{background:var(--warning-light);color:var(--warning);}
+.timer-num{font-size:64px;font-weight:800;text-align:center;letter-spacing:-2px;color:var(--text);transition:color .3s;line-height:1;margin:10px 0;}
+.timer-num.warn{color:var(--warning);}.timer-num.rest{color:var(--success);}
+.segs{display:flex;gap:6px;margin:10px 0 4px;}
+.seg{flex:1;height:6px;border-radius:3px;background:var(--border);transition:background .4s;}
+.seg.on{background:var(--accent);}
+.seg-info{font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;}
+.subj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.sj{padding:9px 4px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text2);text-align:center;transition:all .15s;}
+.sj.sel{background:var(--accent-light);color:var(--accent);border-color:var(--accent);}
+.btn-row{display:flex;gap:10px;justify-content:center;}
+.btn{padding:12px 28px;border-radius:var(--radius-sm);border:none;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.02em;}
+.btn:active{transform:scale(.96);}
+.btn.primary{background:var(--accent);color:#fff;}.btn.primary:active{background:var(--accent-dark);}
+.btn.ghost{background:var(--border);color:var(--text2);}
+.btn.success-btn{background:var(--success);color:#fff;}.btn.danger-btn{background:var(--danger);color:#fff;}
+.input-group{margin-bottom:14px;}
+.input-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;}
+.input-field{width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;outline:none;transition:border .15s;}
+.input-field:focus{border-color:var(--accent);}
+.score-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0;}
+.score-item{padding:10px;border-radius:var(--radius-sm);background:var(--bg);text-align:center;}
+.score-pts{font-size:16px;font-weight:700;color:var(--accent);}
+.score-range{font-size:11px;color:var(--text3);margin-top:2px;}
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);}
+.log-item:last-child{border-bottom:none;}
+.log-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-right:10px;flex-shrink:0;}
+.log-left{display:flex;align-items:center;}
+.log-desc{font-size:13px;font-weight:600;color:var(--text);}
+.log-time{font-size:11px;color:var(--text3);}
+.log-pts{font-size:15px;font-weight:700;}.log-pts.plus{color:var(--success);}.log-pts.minus{color:var(--danger);}
+.empty-state{text-align:center;padding:32px 0;color:var(--text3);font-size:14px;}
+.balance-display{text-align:center;padding:20px 0;}
+.balance-big{font-size:42px;font-weight:800;color:var(--success);}
+.balance-sub{font-size:13px;color:var(--text3);margin-top:4px;}
+/* DEX (図鑑) */
+.dex-stats{display:flex;justify-content:space-around;margin-bottom:14px;}
+.dex-stat{text-align:center;}
+.dex-stat-num{font-size:22px;font-weight:800;color:var(--accent);}
+.dex-stat-label{font-size:10px;color:var(--text3);}
+.dex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.dex-cell{aspect-ratio:1;border-radius:var(--radius-sm);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:30px;position:relative;border:1.5px solid transparent;cursor:pointer;transition:transform .1s;}
+.dex-cell:active{transform:scale(.92);}
+.dex-cell.locked{filter:grayscale(1) brightness(0.7) opacity(0.35);font-size:26px;}
+.dex-cell.owned.rare{border-color:var(--rare);background:var(--rare-bg);}
+.dex-cell.owned.sr{border-color:var(--sr);background:var(--sr-bg);}
+.dex-cell.owned.legend{border-color:var(--legend);background:var(--legend-bg);box-shadow:0 0 10px rgba(245,166,35,0.3);}
+.dex-count{position:absolute;bottom:2px;right:4px;font-size:9px;font-weight:700;color:var(--text2);background:rgba(255,255,255,0.7);border-radius:6px;padding:0 3px;}
+.dex-section-label{font-size:11px;font-weight:700;color:var(--text3);margin:14px 0 8px;text-transform:uppercase;}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;padding:20px;}
+.modal-bg.show{opacity:1;pointer-events:all;}
+.modal{background:var(--card);border-radius:20px;padding:28px 24px;text-align:center;width:100%;max-width:320px;transform:scale(.92);transition:transform .25s;}
+.modal-bg.show .modal{transform:scale(1);}
+.modal-big-emoji{font-size:64px;margin-bottom:12px;display:inline-block;}
+.modal-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.modal-body{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:20px;}
+.modal-timer{font-size:36px;font-weight:800;color:var(--success);margin-bottom:16px;letter-spacing:-1px;}
+/* GACHA modal special */
+.gacha-burst{animation:burst .6s ease;}
+@keyframes burst{0%{transform:scale(0) rotate(-30deg);opacity:0}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+.gacha-rare-label{font-size:13px;font-weight:800;padding:3px 14px;border-radius:99px;display:inline-block;margin-bottom:10px;}
+.shine{position:relative;}
+.shine.legend-shine::after{content:'✨';position:absolute;font-size:24px;animation:spin 2s linear infinite;top:-10px;right:-20px;}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--text);color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:600;z-index:300;transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;}
+.divider-line{flex:1;height:1px;background:var(--border);}
+.divider-txt{font-size:11px;color:var(--text3);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="content">
+
+    <!-- HOME -->
+    <div id="s-home" class="screen active">
+      <div class="header">
+        <div><div class="header-title">📚 べんきょうコイン</div><div class="header-sub" id="today-date"></div></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">ポイント</div><div class="metric-val blue" id="h-pts">0</div></div>
+        <div class="metric"><div class="metric-label">お小遣い</div><div class="metric-val green" id="h-money">¥0</div></div>
+        <div class="metric"><div class="metric-label">今日</div><div class="metric-val orange" id="h-today">0分</div></div>
+      </div>
+      <div class="buddy-card">
+        <div class="lv-badge" id="lv-badge">Lv.1</div>
+        <div class="buddy-emoji" id="buddy-emoji">🐣</div>
+        <div class="buddy-name" id="buddy-name">あいぼう</div>
+        <div class="buddy-rare r-normal" id="buddy-rare">ノーマル</div>
+        <div class="prog-track"><div class="prog-fill" id="lv-prog" style="width:0%"></div></div>
+        <div class="prog-txt" id="lv-next">次のレベルまで 50pt</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;">
+          レベルが上がると新しい仲間が登場！<br>
+          <span style="color:var(--accent);font-weight:700;">図鑑</span>でコレクションを見てみよう 📖
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMER -->
+    <div id="s-timer" class="screen">
+      <div class="header"><div class="header-title">⏱ タイマー</div></div>
+      <div class="card" style="padding-bottom:20px;">
+        <div class="card-title">科目を選ぶ</div>
+        <div class="subj-grid" id="subj-grid">
+          <button class="sj sel" onclick="selSubj(this,'算数')">算数</button>
+          <button class="sj" onclick="selSubj(this,'国語')">国語</button>
+          <button class="sj" onclick="selSubj(this,'理科')">理科</button>
+          <button class="sj" onclick="selSubj(this,'社会')">社会</button>
+          <button class="sj" onclick="selSubj(this,'英語')">英語</button>
+          <button class="sj" onclick="selSubj(this,'その他')">その他</button>
+        </div>
+        <div class="timer-phase"><span class="phase-pill study" id="phase-pill">📖 勉強中</span></div>
+        <div class="timer-num" id="timer-disp">40:00</div>
+        <div class="segs" id="segs">
+          <div class="seg" id="sg0"></div><div class="seg" id="sg1"></div>
+          <div class="seg" id="sg2"></div><div class="seg" id="sg3"></div>
+        </div>
+        <div class="seg-info" id="seg-info">セッション 1 / 4　完了で +35pt</div>
+        <div class="btn-row">
+          <button class="btn primary" id="main-btn" onclick="toggleTimer()">スタート</button>
+          <button class="btn ghost" onclick="resetTimer()">リセット</button>
+        </div>
+      </div>
+      <div style="background:var(--accent-light);border-radius:var(--radius);padding:14px 16px;font-size:13px;color:var(--accent);line-height:1.7;margin-bottom:14px;">
+        <strong>ポモドーロ方式</strong><br>
+        40分勉強 → 10分休憩 を1セット（+35pt）<br>
+        4セット達成でボーナス +20pt 🎉
+      </div>
+      <div class="divider"><div class="divider-line"></div><div class="divider-txt">または手動で記録</div><div class="divider-line"></div></div>
+      <div class="card">
+        <div class="input-group"><label class="input-label">勉強時間（分）</label><input class="input-field" type="number" id="m-min" value="40" min="1" inputmode="numeric"/></div>
+        <div class="input-group"><label class="input-label">科目</label><input class="input-field" type="text" id="m-subj" value="算数"/></div>
+        <button class="btn primary" style="width:100%;" onclick="manualAdd()">記録する</button>
+      </div>
+    </div>
+
+    <!-- TEST -->
+    <div id="s-test" class="screen">
+      <div class="header"><div class="header-title">📝 テスト記録</div></div>
+      <div class="card">
+        <div class="input-group"><label class="input-label">科目</label><input class="input-field" type="text" id="t-subj" value="算数"/></div>
+        <div class="input-group"><label class="input-label">点数（100点満点）</label><input class="input-field" type="number" id="t-score" value="80" min="0" max="100" inputmode="numeric"/></div>
+        <div class="score-grid">
+          <div class="score-item"><div class="score-pts">100pt</div><div class="score-range">90〜100点</div></div>
+          <div class="score-item"><div class="score-pts">60pt</div><div class="score-range">70〜89点</div></div>
+          <div class="score-item"><div class="score-pts">30pt</div><div class="score-range">50〜69点</div></div>
+          <div class="score-item"><div class="score-pts">12pt</div><div class="score-range">〜49点</div></div>
+        </div>
+        <button class="btn primary" style="width:100%;" onclick="addTest()">ポイントをもらう 🎁</button>
+      </div>
+    </div>
+
+    <!-- DEX (図鑑) -->
+    <div id="s-dex" class="screen">
+      <div class="header"><div class="header-title">📖 ずかん</div></div>
+      <div class="card">
+        <div class="dex-stats">
+          <div class="dex-stat"><div class="dex-stat-num" id="dex-owned">0</div><div class="dex-stat-label">あつめた</div></div>
+          <div class="dex-stat"><div class="dex-stat-num" id="dex-total">0</div><div class="dex-stat-label">ぜんぶ</div></div>
+          <div class="dex-stat"><div class="dex-stat-num" id="dex-pct">0%</div><div class="dex-stat-label">かんせい</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div id="dex-container"></div>
+      </div>
+    </div>
+
+    <!-- SHOP -->
+    <div id="s-shop" class="screen">
+      <div class="header"><div class="header-title">💰 おこづかい</div></div>
+      <div class="card">
+        <div class="balance-display">
+          <div class="balance-big" id="sh-money">¥0</div>
+          <div class="balance-sub" id="sh-pts">0 ポイント保有中</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">つかう（1pt = ¥1）</div>
+        <div class="input-group"><label class="input-label">金額（¥）</label><input class="input-field" type="number" id="sp-val" value="100" min="1" inputmode="numeric"/></div>
+        <button class="btn danger-btn" style="width:100%;" onclick="spendPts()">つかう</button>
+        <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5;">
+          ※ ポイントを使ってもレベルや図鑑は減りません。レベルは「これまでの努力の合計」で決まります。
+        </div>
+      </div>
+      <div class="card" style="padding:0 18px;">
+        <div class="card-title" style="padding-top:18px;">履歴</div>
+        <div id="log-list"><div class="empty-state">まだ記録がありません</div></div>
+        <div style="padding:0 0 12px;"><button onclick="clearLog()" style="font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;">履歴を全削除</button></div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showTab('home',this)"><span class="icon">🏠</span><span>ホーム</span></button>
+    <button class="nav-btn" onclick="showTab('timer',this)"><span class="icon">⏱</span><span>タイマー</span></button>
+    <button class="nav-btn" onclick="showTab('test',this)"><span class="icon">📝</span><span>テスト</span></button>
+    <button class="nav-btn" onclick="showTab('dex',this)"><span class="icon">📖</span><span>ずかん</span></button>
+    <button class="nav-btn" onclick="showTab('shop',this)"><span class="icon">💰</span><span>つかう</span></button>
+  </nav>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="ov-rest">
+  <div class="modal">
+    <div class="modal-big-emoji">☕</div>
+    <div class="modal-title">休憩しよう！</div>
+    <div class="modal-body">40分よくがんばった！<br>目を閉じてストレッチしよう。</div>
+    <div class="modal-timer" id="rest-disp">10:00</div>
+    <button class="btn success-btn" style="width:100%;" onclick="endRest()">休憩おわり！次へ →</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="ov-lvup">
+  <div class="modal">
+    <div class="modal-big-emoji">⬆️</div>
+    <div class="modal-title" id="lvup-title">レベルアップ！</div>
+    <div class="modal-body" id="lvup-body">Lv.2 になったよ！</div>
+    <button class="btn primary" style="width:100%;" onclick="closeOv('ov-lvup');afterLvUp()">やったー！</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="ov-gacha">
+  <div class="modal">
+    <div class="gacha-rare-label" id="gacha-rare">ノーマル</div>
+    <div class="modal-big-emoji gacha-burst shine" id="gacha-emoji">🐣</div>
+    <div class="modal-title" id="gacha-title">あたらしい仲間！</div>
+    <div class="modal-body" id="gacha-body">「あいぼう」が仲間になった！</div>
+    <button class="btn primary" style="width:100%;" onclick="closeOv('ov-gacha')">やったー！</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="ov-pomodo">
+  <div class="modal">
+    <div class="modal-big-emoji">🏆</div>
+    <div class="modal-title">4セット達成！</div>
+    <div class="modal-body">ポモドーロ完了！<br>ボーナス <strong style="color:var(--accent)">+10pt</strong> ゲット！<br>今日もたくさん勉強したね！</div>
+    <button class="btn primary" style="width:100%;" onclick="closeOv('ov-pomodo');resetTimer()">ありがとう！</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="ov-dex-detail">
+  <div class="modal">
+    <div class="modal-big-emoji" id="dd-emoji">🐣</div>
+    <div class="gacha-rare-label" id="dd-rare" style="margin-bottom:10px;">ノーマル</div>
+    <div class="modal-title" id="dd-name">あいぼう</div>
+    <div class="modal-body" id="dd-info">×1 持っている</div>
+    <button class="btn primary" style="width:100%;" onclick="closeOv('ov-dex-detail')">とじる</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════
+//  キャラクター図鑑（絵文字版）
+//  ノーマル / レア / スーパーレア(sr) / 伝説(legend)
+// ════════════════════════════════════════════════
+const CHARS=[
+  // ── ノーマル（普段よく出る仲間 40種）──
+  {id:'n01',e:'🐣',n:'ひよっこ',r:'normal'},{id:'n02',e:'🐥',n:'ぴよすけ',r:'normal'},
+  {id:'n03',e:'🐤',n:'ことり',r:'normal'},{id:'n04',e:'🐰',n:'うさみ',r:'normal'},
+  {id:'n05',e:'🐱',n:'にゃんた',r:'normal'},{id:'n06',e:'🐶',n:'わんこ',r:'normal'},
+  {id:'n07',e:'🐭',n:'ちゅう太',r:'normal'},{id:'n08',e:'🐹',n:'はむお',r:'normal'},
+  {id:'n09',e:'🐸',n:'けろりん',r:'normal'},{id:'n10',e:'🐢',n:'かめきち',r:'normal'},
+  {id:'n11',e:'🐌',n:'でんでん',r:'normal'},{id:'n12',e:'🐝',n:'はちみつ',r:'normal'},
+  {id:'n13',e:'🐞',n:'てんとう',r:'normal'},{id:'n14',e:'🦋',n:'ちょうこ',r:'normal'},
+  {id:'n15',e:'🐠',n:'さかなくん',r:'normal'},{id:'n16',e:'🐡',n:'ぷくぷく',r:'normal'},
+  {id:'n17',e:'🦔',n:'はりお',r:'normal'},{id:'n18',e:'🐻',n:'くまさん',r:'normal'},
+  {id:'n19',e:'🐨',n:'こあらん',r:'normal'},{id:'n20',e:'🐷',n:'ぶーちゃん',r:'normal'},
+  {id:'n21',e:'🐮',n:'もーこ',r:'normal'},{id:'n22',e:'🐔',n:'こけこ',r:'normal'},
+  {id:'n23',e:'🐧',n:'ぺんぎー',r:'normal'},{id:'n24',e:'🐿️',n:'りすき',r:'normal'},
+  {id:'n25',e:'🦊',n:'こんすけ',r:'normal'},{id:'n26',e:'🦝',n:'あらいぐ',r:'normal'},
+  {id:'n27',e:'🐗',n:'うりぼう',r:'normal'},{id:'n28',e:'🐑',n:'めえこ',r:'normal'},
+  {id:'n29',e:'🐈',n:'みけねこ',r:'normal'},{id:'n30',e:'🦎',n:'とかげん',r:'normal'},
+  {id:'n31',e:'🐙',n:'たこすけ',r:'normal'},{id:'n32',e:'🦀',n:'かにまる',r:'normal'},
+  {id:'n33',e:'🦐',n:'えびちゃん',r:'normal'},{id:'n34',e:'🐛',n:'いもむし',r:'normal'},
+  {id:'n35',e:'🦗',n:'こおろぎ',r:'normal'},{id:'n36',e:'🐜',n:'ありんこ',r:'normal'},
+  {id:'n37',e:'🦅',n:'わしお',r:'normal'},{id:'n38',e:'🦉',n:'ふくろん',r:'normal'},
+  {id:'n39',e:'🦇',n:'こうもり',r:'normal'},{id:'n40',e:'🐊',n:'わにお',r:'normal'},
+  // ── レア（ちょっと嬉しい 25種）──
+  {id:'r01',e:'🦁',n:'らいおん王子',r:'rare'},{id:'r02',e:'🐯',n:'とらじろう',r:'rare'},
+  {id:'r03',e:'🐺',n:'おおかみ丸',r:'rare'},{id:'r04',e:'🦒',n:'きりんぬ',r:'rare'},
+  {id:'r05',e:'🦓',n:'しまうま卿',r:'rare'},{id:'r06',e:'🦘',n:'かんがる兄',r:'rare'},
+  {id:'r07',e:'🦦',n:'らっこ姫',r:'rare'},{id:'r08',e:'🦥',n:'なまけ仙人',r:'rare'},
+  {id:'r09',e:'🦫',n:'びーばー親方',r:'rare'},{id:'r10',e:'🦨',n:'すかんく忍者',r:'rare'},
+  {id:'r11',e:'🦡',n:'あなぐま長老',r:'rare'},{id:'r12',e:'🦃',n:'しちめんちょう',r:'rare'},
+  {id:'r13',e:'🦚',n:'くじゃく姫',r:'rare'},{id:'r14',e:'🦜',n:'おうむ博士',r:'rare'},
+  {id:'r15',e:'🦢',n:'はくちょう姫',r:'rare'},{id:'r16',e:'🦩',n:'ふらみんご',r:'rare'},
+  {id:'r17',e:'🐊',n:'クロコ将軍',r:'rare'},{id:'r18',e:'🦬',n:'ばっふぁろー',r:'rare'},
+  {id:'r19',e:'🐉',n:'こりゅう',r:'rare'},{id:'r20',e:'🦕',n:'のっそり竜',r:'rare'},
+  {id:'r21',e:'🦖',n:'がおー竜',r:'rare'},{id:'r22',e:'🐘',n:'ぞうさま',r:'rare'},
+  {id:'r23',e:'🦏',n:'さいの戦士',r:'rare'},{id:'r24',e:'🦛',n:'かばのぬし',r:'rare'},
+  {id:'r25',e:'🐅',n:'ベンガル王',r:'rare'},
+  // ── スーパーレア（おお！ 12種）──
+  {id:'s01',e:'🦄',n:'ユニコーン',r:'sr'},{id:'s02',e:'🐲',n:'りゅう神',r:'sr'},
+  {id:'s03',e:'🧚',n:'ようせい',r:'sr'},{id:'s04',e:'🧜',n:'にんぎょ',r:'sr'},
+  {id:'s05',e:'🧞',n:'ランプの精',r:'sr'},{id:'s06',e:'🦅',n:'雷鳥サンダー',r:'sr'},
+  {id:'s07',e:'🐦‍🔥',n:'ほのお鳥',r:'sr'},{id:'s08',e:'👹',n:'あかおに大将',r:'sr'},
+  {id:'s09',e:'👺',n:'てんぐ仙人',r:'sr'},{id:'s10',e:'🧛',n:'ヴァンパイア',r:'sr'},
+  {id:'s11',e:'🧙',n:'まほうつかい',r:'sr'},{id:'s12',e:'🦾',n:'ロボくん',r:'sr'},
+  // ── 伝説（大当たり！ 8種）──
+  {id:'l01',e:'🐉',n:'伝説の竜王',r:'legend'},{id:'l02',e:'🔥',n:'不死鳥フェニックス',r:'legend'},
+  {id:'l03',e:'⚡',n:'雷神ライジン',r:'legend'},{id:'l04',e:'🌟',n:'星のせいれい',r:'legend'},
+  {id:'l05',e:'👑',n:'王者キング',r:'legend'},{id:'l06',e:'💎',n:'ダイヤモンド竜',r:'legend'},
+  {id:'l07',e:'🌈',n:'にじいろ神獣',r:'legend'},{id:'l08',e:'🐦‍🔥',n:'太陽神ソル',r:'legend'}
+];
+
+const RARE_INFO={
+  normal:{label:'ノーマル',cls:'r-normal',gcls:'',prob:70},
+  rare:{label:'レア',cls:'r-rare',gcls:'',prob:23},
+  sr:{label:'スーパーレア',cls:'r-sr',gcls:'',prob:6},
+  legend:{label:'★伝説★',cls:'r-legend',gcls:'legend-shine',prob:1}
+};
+
+function pickRarity(){
+  const roll=Math.random()*100;
+  if(roll<1)return'legend';
+  if(roll<7)return'sr';
+  if(roll<30)return'rare';
+  return'normal';
+}
+function pickChar(rarity){
+  const pool=CHARS.filter(c=>c.r===rarity);
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function charById(id){return CHARS.find(c=>c.id===id);}
+
+// ════════════════════════════════════════════════
+//  状態管理（v3。旧データ v2 から自動引き継ぎ）
+// ════════════════════════════════════════════════
+function migrate(){
+  // 既存の旧ポイント・履歴を引き継ぐ
+  let old=null;
+  try{const r=localStorage.getItem('benkyou_v2');if(r)old=JSON.parse(r);}catch(e){}
+  const base={pts:0,xp:0,level:1,todayMin:0,todayDate:'',log:[],session:0,subj:'算数',
+    buddy:null,collection:{},seenIntro:false};
+  if(old){
+    base.pts=old.pts||0;
+    base.log=old.log||[];
+    base.todayMin=old.todayMin||0;
+    base.todayDate=old.todayDate||'';
+    base.session=old.session||0;
+    // 旧ポイントの累計を経験値の初期値として引き継ぐ（これまでの努力を反映）
+    // 旧アプリでは使った分も pts から引かれているため、ログから総獲得を再計算
+    let totalEarned=0;
+    (old.log||[]).forEach(l=>{if(l.p>0)totalEarned+=l.p;});
+    base.xp=totalEarned>0?totalEarned:(old.pts||0);
+  }
+  return base;
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem('benkyou_v3');
+    if(raw)return JSON.parse(raw);
+  }catch(e){}
+  return migrate();
+}
+function saveState(){localStorage.setItem('benkyou_v3',JSON.stringify(S));}
+
+let S=loadState();
+if(!S.collection)S.collection={};
+
+// レベル計算：Lv L → L+1 に必要な経験値 = L * 50
+function xpForLevel(L){return L*50;}
+function calcLevel(xp){
+  let lv=1,need=0;
+  while(xp>=need+xpForLevel(lv)){need+=xpForLevel(lv);lv++;}
+  return{level:lv,intoLevel:xp-need,needNext:xpForLevel(lv)};
+}
+
+// 初回：相棒がいなければ1体プレゼント
+if(!S.buddy){
+  const c=pickChar('normal');
+  S.buddy=c.id;
+  S.collection[c.id]=1;
+  saveState();
+}
+
+// レベルを経験値から再計算して整合
+(function syncLevel(){
+  const r=calcLevel(S.xp);
+  S.level=r.level;
+  saveState();
+})();
+
+// 日付リセット
+const todayStr=new Date().toLocaleDateString('ja-JP');
+if(S.todayDate!==todayStr){S.todayMin=0;S.todayDate=todayStr;saveState();}
+
+let T={on:false,isRest:false,studySec:40*60,restSec:10*60,interval:null};
+let pendingLvUps=0; // レベルアップ時のガチャ待ち行列
+
+// ════════════════════════════════════════════════
+//  UI更新
+// ════════════════════════════════════════════════
+function updateUI(){
+  const p=S.pts;
+  document.getElementById('h-pts').textContent=p;
+  document.getElementById('h-money').textContent='¥'+p.toLocaleString();
+  document.getElementById('h-today').textContent=S.todayMin+'分';
+  document.getElementById('sh-money').textContent='¥'+p.toLocaleString();
+  document.getElementById('sh-pts').textContent=p+' ポイント保有中';
+  document.getElementById('today-date').textContent=todayStr;
+
+  const r=calcLevel(S.xp);
+  document.getElementById('lv-badge').textContent='Lv.'+r.level;
+  const pct=Math.round(r.intoLevel/r.needNext*100);
+  document.getElementById('lv-prog').style.width=pct+'%';
+  document.getElementById('lv-next').textContent='次のレベルまで '+(r.needNext-r.intoLevel)+'pt';
+
+  const b=charById(S.buddy)||CHARS[0];
+  document.getElementById('buddy-emoji').textContent=b.e;
+  document.getElementById('buddy-name').textContent=b.n;
+  const ri=RARE_INFO[b.r];
+  const rl=document.getElementById('buddy-rare');
+  rl.textContent=ri.label;rl.className='buddy-rare '+ri.cls;
+
+  renderLog();renderDex();
+}
+
+function renderLog(){
+  const el=document.getElementById('log-list');
+  if(!S.log.length){el.innerHTML='<div class="empty-state">まだ記録がありません</div>';return;}
+  el.innerHTML=[...S.log].reverse().slice(0,50).map(l=>{
+    let ic='📖';
+    if(l.d.includes('テスト'))ic='📝';
+    else if(l.d.includes('おこづかい'))ic='💸';
+    else if(l.d.includes('ボーナス'))ic='🎁';
+    const bg=l.p>=0?'var(--accent-light)':'var(--danger-light)';
+    return`<div class="log-item"><div class="log-left">
+      <div class="log-icon" style="background:${bg}">${ic}</div>
+      <div><div class="log-desc">${l.d}</div><div class="log-time">${l.t}</div></div>
+      </div><div class="log-pts ${l.p>=0?'plus':'minus'}">${l.p>=0?'+':''}${l.p}pt</div></div>`;
+  }).join('');
+}
+
+function renderDex(){
+  const owned=Object.keys(S.collection).filter(k=>S.collection[k]>0).length;
+  const total=CHARS.length;
+  document.getElementById('dex-owned').textContent=owned;
+  document.getElementById('dex-total').textContent=total;
+  document.getElementById('dex-pct').textContent=Math.round(owned/total*100)+'%';
+
+  const order=['normal','rare','sr','legend'];
+  const labels={normal:'ノーマル',rare:'レア',sr:'スーパーレア',legend:'★ 伝説 ★'};
+  let html='';
+  order.forEach(rar=>{
+    html+=`<div class="dex-section-label">${labels[rar]}</div><div class="dex-grid">`;
+    CHARS.filter(c=>c.r===rar).forEach(c=>{
+      const cnt=S.collection[c.id]||0;
+      if(cnt>0){
+        html+=`<div class="dex-cell owned ${rar}" onclick="showDexDetail('${c.id}')">${c.e}${cnt>1?`<span class="dex-count">×${cnt}</span>`:''}</div>`;
+      }else{
+        html+=`<div class="dex-cell locked">❔</div>`;
+      }
+    });
+    html+='</div>';
+  });
+  document.getElementById('dex-container').innerHTML=html;
+}
+
+function showDexDetail(id){
+  const c=charById(id);const cnt=S.collection[id]||0;
+  document.getElementById('dd-emoji').textContent=c.e;
+  const ri=RARE_INFO[c.r];
+  const dr=document.getElementById('dd-rare');
+  dr.textContent=ri.label;
+  dr.className='gacha-rare-label '+ri.cls;
+  document.getElementById('dd-name').textContent=c.n;
+  document.getElementById('dd-info').textContent='×'+cnt+' 持っている';
+  showOv('ov-dex-detail');
+}
+
+// ════════════════════════════════════════════════
+//  ポイント＆経験値の加算
+// ════════════════════════════════════════════════
+function addPts(pts,desc,xpGain){
+  // pts = お小遣い（お金）に加算　/　xpGain = レベル経験値に加算
+  // xpGain 未指定なら pts と同じだけ経験値が入る（テスト等の従来動作）
+  const before=calcLevel(S.xp).level;
+  S.pts+=pts;if(S.pts<0)S.pts=0;
+  const xp=(xpGain===undefined)?(pts>0?pts:0):xpGain;
+  if(xp>0)S.xp+=xp; // 使った分はレベルに影響しない
+  const now=new Date();
+  S.log.push({p:pts,d:desc,t:now.toLocaleDateString('ja-JP')+' '+now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})});
+  const after=calcLevel(S.xp).level;
+  saveState();
+  showToast((pts>=0?'＋'+pts:''+pts)+'pt　'+desc);
+  updateUI();
+  if(after>before){
+    pendingLvUps=after-before;
+    showLvUp(after);
+  }
+}
+
+function showLvUp(newLevel){
+  document.getElementById('lvup-title').textContent='レベルアップ！ Lv.'+newLevel;
+  document.getElementById('lvup-body').innerHTML='Lv.'+newLevel+' になったよ！<br>新しい仲間がやってくる…！';
+  // buddy bounce
+  const el=document.getElementById('buddy-emoji');
+  el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+  showOv('ov-lvup');
+}
+
+function afterLvUp(){
+  // レベルアップ分だけガチャを引く
+  if(pendingLvUps>0){
+    pendingLvUps--;
+    rollGacha(()=>{
+      if(pendingLvUps>0)afterLvUp();
+    });
+  }
+}
+
+// ガチャ：1体引く
+function rollGacha(onClose){
+  const rarity=pickRarity();
+  const c=pickChar(rarity);
+  const isNew=!(S.collection[c.id]>0);
+  S.collection[c.id]=(S.collection[c.id]||0)+1;
+  // レア度が今の相棒より高ければ相棒を入れ替え（伝説>sr>rare>normal）
+  const rank={normal:0,rare:1,sr:2,legend:3};
+  const cur=charById(S.buddy);
+  if(!cur||rank[c.r]>=rank[cur.r])S.buddy=c.id;
+  saveState();
+
+  const ri=RARE_INFO[rarity];
+  const gr=document.getElementById('gacha-rare');
+  gr.textContent=ri.label;gr.className='gacha-rare-label '+ri.cls;
+  const ge=document.getElementById('gacha-emoji');
+  ge.textContent=c.e;
+  ge.className='modal-big-emoji gacha-burst shine '+ri.gcls;
+  void ge.offsetWidth; // restart animation
+  ge.classList.add('gacha-burst');
+  document.getElementById('gacha-title').textContent=isNew?'あたらしい仲間！✨':'仲間が増えた！';
+  document.getElementById('gacha-body').innerHTML=`「<strong>${c.n}</strong>」が仲間になった！`+(isNew?'<br>図鑑に登録されたよ📖':'');
+
+  // 閉じたとき次へ
+  const btn=document.querySelector('#ov-gacha .btn');
+  btn.onclick=()=>{closeOv('ov-gacha');updateUI();if(onClose)setTimeout(onClose,250);};
+  showOv('ov-gacha');
+}
+
+function clearLog(){
+  if(!confirm('履歴を全て削除しますか？（レベルと図鑑は消えません）'))return;
+  S.log=[];saveState();renderLog();
+}
+
+// ════════════════════════════════════════════════
+//  タブ・科目・タイマー
+// ════════════════════════════════════════════════
+function showTab(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  btn.classList.add('active');
+  updateUI();
+}
+function selSubj(btn,s){
+  document.querySelectorAll('.sj').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');S.subj=s;
+  document.getElementById('m-subj').value=s;
+}
+function fmt(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+function updateTimerUI(){
+  if(T.isRest){
+    document.getElementById('timer-disp').textContent=fmt(T.restSec);
+    document.getElementById('timer-disp').className='timer-num rest';
+    document.getElementById('phase-pill').textContent='☕ 休憩中';
+    document.getElementById('phase-pill').className='phase-pill rest';
+    document.getElementById('rest-disp').textContent=fmt(T.restSec);
+    return;
+  }
+  const warn=T.studySec<=300;
+  document.getElementById('timer-disp').textContent=fmt(T.studySec);
+  document.getElementById('timer-disp').className='timer-num'+(warn?' warn':'');
+  document.getElementById('phase-pill').textContent=warn?'⚠️ もうすぐ終わり！':'📖 勉強中';
+  document.getElementById('phase-pill').className='phase-pill'+(warn?' warn':' study');
+  for(let i=0;i<4;i++)document.getElementById('sg'+i).className='seg'+(i<S.session?' on':'');
+  document.getElementById('seg-info').textContent='セッション '+(S.session+1)+' / 4　完了で +35pt';
+}
+function toggleTimer(){
+  if(T.on){clearInterval(T.interval);T.on=false;document.getElementById('main-btn').textContent='スタート';}
+  else{T.on=true;document.getElementById('main-btn').textContent='ストップ';T.interval=setInterval(tick,1000);}
+}
+function tick(){
+  if(T.isRest){T.restSec--;updateTimerUI();if(T.restSec<=0)finishRest();return;}
+  T.studySec--;updateTimerUI();if(T.studySec<=0)finishStudy();
+}
+function finishStudy(){
+  clearInterval(T.interval);T.on=false;
+  S.todayMin+=40;S.session++;
+  addPts(35,S.subj+' 40分セッション完了',15);
+  if(S.session>=4){addPts(20,'ポモドーロボーナス！',10);S.session=0;saveState();showOv('ov-pomodo');}
+  else{T.isRest=true;T.restSec=10*60;T.studySec=40*60;updateTimerUI();showOv('ov-rest');}
+  document.getElementById('main-btn').textContent='スタート';
+}
+function finishRest(){clearInterval(T.interval);T.on=false;T.isRest=false;T.restSec=10*60;T.studySec=40*60;closeOv('ov-rest');updateTimerUI();document.getElementById('main-btn').textContent='スタート';}
+function endRest(){finishRest();}
+function resetTimer(){clearInterval(T.interval);T.on=false;T.isRest=false;T.studySec=40*60;T.restSec=10*60;document.getElementById('main-btn').textContent='スタート';updateTimerUI();}
+function manualAdd(){
+  const m=parseInt(document.getElementById('m-min').value)||0;
+  const subj=document.getElementById('m-subj').value||'べんきょう';
+  if(m<1)return;
+  S.todayMin+=m;
+  const sets=Math.floor(m/40);
+  const half=(m%40>=20)?1:0;
+  const moneyPts=sets*35+half*17;   // お金：40分=35pt、20分以上の端数=17pt
+  const xpPts=sets*15+half*7;       // 経験値：40分=15、端数=7
+  if(moneyPts>0)addPts(moneyPts,subj+' '+m+'分',xpPts);
+  else{S.log.push({p:0,d:subj+' '+m+'分（記録のみ）',t:new Date().toLocaleDateString('ja-JP')});saveState();showToast('記録しました！');updateUI();}
+}
+function addTest(){
+  const sc=parseInt(document.getElementById('t-score').value);
+  const subj=document.getElementById('t-subj').value||'テスト';
+  if(isNaN(sc)||sc<0||sc>100){showToast('点数は0〜100で入力してね');return;}
+  let money=12,xp=5;
+  if(sc>=90){money=100;xp=50;}
+  else if(sc>=70){money=60;xp=30;}
+  else if(sc>=50){money=30;xp=15;}
+  addPts(money,subj+'テスト '+sc+'点',xp);
+}
+function spendPts(){
+  const v=parseInt(document.getElementById('sp-val').value)||0;
+  if(v<1)return;
+  if(v>S.pts){showToast('ポイントが足りないよ！');return;}
+  addPts(-v,'おこづかい使用 ¥'+v);
+}
+function showOv(id){document.getElementById(id).classList.add('show');}
+function closeOv(id){document.getElementById(id).classList.remove('show');}
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+updateUI();updateTimerUI();
+</script>
+</body>
+</html>
